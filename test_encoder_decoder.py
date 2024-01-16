@@ -1,5 +1,4 @@
 import torch
-import torch.nn as nn
 from models import *
 from sprites_datagen.moving_sprites import MovingSpriteDataset
 from general_utils import AttrDict

@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 import torch.nn as nn
-import datetime, random
+import datetime
 import cv2
 
 class Encoder(nn.Module):

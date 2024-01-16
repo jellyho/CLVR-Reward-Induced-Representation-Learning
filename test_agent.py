@@ -1,8 +1,5 @@
 import torch
-import torch.nn as nn
-import torch.optim as optim
 import gym
-import numpy as np
 from models import *
 from plotter import *
 from general_utils import *
