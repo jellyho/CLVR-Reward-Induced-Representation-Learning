@@ -23,7 +23,7 @@ env = gym.make(task, render_mode='human')
 input_dim = 4
 action_dim = 4
 
-agent = PPOAgent(input_dim, action_dim, lr=0.001, ac_ratio=5)
+agent = A2CAgent(input_dim, action_dim, lr=0.0003, ac_ratio=5)
 
 action_dict = {0: [-1, 0], 1: [1, 0], 2: [0, -1], 3:[0, 1]}
 

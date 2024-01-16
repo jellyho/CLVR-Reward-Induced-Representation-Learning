@@ -7,7 +7,9 @@ Starter Code Repo : <https://github.com/kpertsch/clvr_impl_starter>
 ![](/Results/model.png)
 
 ## 1. Implement the reward-indcued representation learning model
-I trained the model using the provided dataset with 6 given rewards.
+I contructed the model in [models.py]()
+
+ANd I trained the model using the provided dataset with 6 given rewards.
 
 
 [train_encoder_all_task.py](https://github.com/jellyho/CLVR_Impl_RIRL/blob/8cd4db4101ef8b9c0694cba546f904e20a1daf6f/train_encoder_all_task.py#L1)

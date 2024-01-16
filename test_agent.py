@@ -18,7 +18,7 @@ input_dim = 4
 action_dim = 2
 # 
 # agent = A2CAgent(input_dim, action_dim)
-agent = PPOAgent(input_dim, action_dim)
+agent = A2CAgent(input_dim, action_dim)
 agent.network.load_state_dict(torch.load(f'./Results/agents/SAC.pth'))
 
 while True:

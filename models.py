@@ -2,6 +2,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import datetime
+import random
 import cv2
 
 class Encoder(nn.Module):
@@ -81,9 +82,7 @@ class HiddenStateEncoder(nn.Module):
         x = self.relu(x)
         x = self.linear3(x)
         x = self.relu(x) # (30, 64)
-        # print(x)
         seq = self.lstm(x)
-        # print(seq)
         return seq
     
 class FutureRewardsEstimator(nn.Module):
@@ -135,12 +134,11 @@ class ActorCritic(nn.Module):
     def __init__(self, input_dim, action_dim):
         super(ActorCritic, self).__init__()
         self.action_dim = action_dim
-        # Actor 신경망
         self.actor = nn.Sequential(
             nn.Linear(input_dim, 256),
             nn.Tanh(),
             nn.Linear(256, action_dim),
-            nn.Softmax(dim=-1)  # 확률로 변환하기 위해 Softmax 사용
+            nn.Softmax(dim=-1)
         )
 
         # Critic 신경망
@@ -153,16 +151,13 @@ class ActorCritic(nn.Module):
         )
 
     def forward(self, state):
-        # Actor의 출력은 각 행동에 대한 확률 분포
         action_prob = self.actor(state)
-
-        # Critic의 출력은 상태의 가치 (scalar)
         state_value = self.critic(state)
 
         return action_prob, state_value
     
 class A2CAgent:
-    def __init__(self, input_dim, action_dim, lr=0.001, gamma=0.99, ac_ratio=1):
+    def __init__(self, input_dim, action_dim, lr=0.0007, gamma=0.99, ac_ratio=1):
         self.input_dim = input_dim
         self.action_dim = action_dim
         self.model = ActorCritic(input_dim, action_dim)
@@ -204,6 +199,9 @@ class A2CAgent:
             done = False
             total_reward = 0
             while not done:
+                img = env.render()
+                cv2.imshow('train', img)
+                cv2.waitKey(1)
                 action_prob, _ = self.model(torch.FloatTensor(state))
                 action = np.random.choice(len(action_prob), p=action_prob.detach().numpy())
                 if action_dict:
@@ -215,68 +213,94 @@ class A2CAgent:
                 state = next_state
                 total_reward += reward
             total_rewards.append(total_reward)
-            print(f"Episode {e}, Total Reward: {total_reward}")
+            print(f"Episode {e}, Total Reward: {np.mean(total_rewards[-50:])}")
         torch.save(self.model.state_dict(), f'Results/agents/A2C_{datetime.datetime.now()}.pth')
         return total_rewards
-
-class PPOAgent(A2CAgent):
-    def __init__(self, input_dim, action_dim, lr=0.001, gamma=0.99, ac_ratio=1, epsilon=0.2):
-        super(PPOAgent, self).__init__(input_dim, action_dim, lr, gamma, ac_ratio)
-        self.epsilon = epsilon
-
-    def update(self, state, action, action_prob_before, reward, next_state, done):
-        state = torch.FloatTensor(state)
-        next_state = torch.FloatTensor(next_state)
-        action = torch.LongTensor(action)
-        reward = torch.FloatTensor(reward)
-        done = torch.LongTensor(done)
-        action_prob_before = torch.FloatTensor(action_prob_before)
-
-        action_prob, value = self.model(state)
-
-        with torch.no_grad():
-            _, next_value = self.model(next_state)
-            target = reward + (1 - done) * self.gamma * next_value
-        critic_loss = (target - value).pow(2).mean() # mse for critic
-
-        adv = (target - value).detach()
-
-        ratio = torch.exp(action_prob - action_prob_before)
-
-        surro1 = ratio * adv
-        surro2 = torch.clamp(ratio, 1 - self.epsilon, 1 + self.epsilon) * adv
-
-        actor_loss = -torch.min(surro1, surro2).mean()
-
-        loss = critic_loss + self.ac_ratio * actor_loss
-        self.optimizer.zero_grad()
-        loss.backward()
-        self.optimizer.step()
-
-        return loss.item()
     
-    def train(self, env, num_episodes=1000, action_dict=None, verbose=False):
-        total_rewards = []
-        for e in range(num_episodes):
+class ReplayBuffer: #FIFO
+    def __init__(self, max_len):
+        self.max_len = max_len
+        self.idx = 0
+        self.size = 0
+        self.buffer = [] * self.max_len
+
+    def add(self, state, action, reward, next_state, done):
+        self.idx = (self.idx + 1) % self.max_len
+        self.buffer[self.idx] = (state, action, reward, next_state, done)
+        self.size = min(self.size + 1, self.max_len)
+
+    def smaple(self, batch_size):
+        idxs = np.random.randint(0, self.size, size=batch_size)
+        # need to change to torch tensor lists.
+        return self.buffer[idxs]
+
+class MLP(nn.Module):
+    def __init__(self, input_dim, output_dim, hidden_dim, hidden_count):
+        self.input = nn.Linear(input_dim, hidden_dim)
+        self.hiddens = nn.ModuleList()
+        for _ in range(hidden_count - 1):
+            self.hiddens.append(nn.Linear(hidden_dim, hidden_dim))
+        self.output = nn.Linear(hidden_dim, output_dim)
+        self.relu = nn.ReLU()
+
+    def foward(self, x):
+        x = self.input(x)
+        x = self.relu(x)
+        for i in range(len(self.hiddens - 1)):
+            x = self.hiddens[i](x)
+            x = self.relu(x)
+        x = self.output(x)
+        return x
+
+
+class SAC:
+    def __init__(self, state_dim, action_dim, gamma=0.99):
+        self.state_dim = state_dim
+        self.action_dim = action_dim
+        self.gamma = gamma
+
+        self.critic = MLP(state_dim, 1, 32, 2)
+        self.target_critic = MLP(state_dim, 1, 32, 2)
+        
+        self.q1 = MLP(state_dim, action_dim, 32, 2)
+        self.q2 = MLP(state_dim, action_dim, 32, 2)
+
+        self.policy = MLP(state_dim, action_dim * 2, 32, 3)
+
+        self.buffer = ReplayBuffer(1000)
+
+        #optimizers needed
+
+    def get_action(self, state):
+        # reparameterization trick
+        policy = self.policy(state)
+        mu = policy[:self.action_dim]
+        sigma = policy[self.action_dim:] # log-variance
+
+        sigma = torch.exp(sigma) # variance
+        epsilon = torch.randn_like(sigma)
+
+        return mu + epsilon * sigma
+
+    def rollout(self, env, number=1):
+        for _ in range(number):
             state = env.reset()
             done = False
-            total_reward = 0
-            while not done:
-                if verbose:
-                    img = env.render()
-                    cv2.imshow('train', img)
-                    cv2.waitKey(1)
-                action_prob, _ = self.model(torch.FloatTensor(state))
-                action = np.random.choice(len(action_prob), p=action_prob.detach().numpy())
-                if action_dict:
-                    next_state, reward, done, _ = env.step(action_dict[action])
-                else:
-                    next_state, reward, done, _ = env.step(action)
 
-                self.update(state, [action], [action_prob[action]], [reward], next_state, [done])
+            while not done:
+                action = self.get_action(state)
+                next_state, reward, done, _ = env.step(action)
+                self.buffer.add(state, action, reward, next_state, done)
                 state = next_state
-                total_reward += reward
-            total_rewards.append(total_reward)
-            print(f"PPO :: Episode {e}, Total Reward: {total_reward}")
-        torch.save(self.model.state_dict(), f'Results/agents/PPO_{datetime.datetime.now()}.pth')
-        return total_rewards
+    
+    def update(self):
+        data = self.buffer.sample(16)
+
+        for state, action, next_State, reward, done in data:
+            # critic update
+            critic = self.critic(state)
+            target_critic = self.target_critic(state)
+
+            q1 = self.q1(state)
+        
+
