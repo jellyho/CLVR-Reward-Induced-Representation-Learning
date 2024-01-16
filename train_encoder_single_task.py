@@ -5,6 +5,12 @@ from sprites_datagen.moving_sprites import MovingSpriteDataset
 from general_utils import AttrDict
 from sprites_datagen.rewards import *
 from plotter import *
+import argparse
+import random
+
+parser = argparse.ArgumentParser(description='Reward')
+parser.add_argument('-r', '--reward', help='Specify the reward')
+args = parser.parse_args()
 
 spec = AttrDict(
         resolution=64,
@@ -18,7 +24,7 @@ spec = AttrDict(
 
 # constants
 N = 5
-T = 25
+T = 30 - N
 lr = 0.001
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -54,7 +60,8 @@ scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer=optim, lr_lambda=lambda 
 
 Epochs = 1000
 losses = []
-task_name = 'vertical_position'
+# task_name = 'vertical_position'
+task_name = args.reward
 
 for e in range(Epochs):
     loss_epoch = 0

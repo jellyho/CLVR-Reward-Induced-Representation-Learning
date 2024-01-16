@@ -74,6 +74,6 @@ for e in range(Epochs):
 
     print(f"epoch:{e} - loss:{np.mean(losses[-30:]):.5f} - lr:{optim.param_groups[0]['lr']:.8f}")
 
-torch.save(encoder.state_dict(), 'encoder_six.pth')
-torch.save(fre.state_dict(), f'fre_six.pth')
+torch.save(encoder.state_dict(), 'Results/encoder/encoder_six.pth')
+torch.save(fre.state_dict(), f'Results/encoder/fre_six.pth')
 plot_and_save_loss_per_epoch_1(losses, 'encoder pretraining', 'encoder')

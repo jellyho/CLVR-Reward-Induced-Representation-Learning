@@ -5,6 +5,12 @@ from sprites_datagen.moving_sprites import MovingSpriteDataset
 from general_utils import AttrDict
 from sprites_datagen.rewards import *
 from plotter import *
+import argparse
+import random
+
+parser = argparse.ArgumentParser(description='Reward')
+parser.add_argument('-r', '--reward', help='Specify the reward')
+args = parser.parse_args()
 
 spec = AttrDict(
         resolution=64,
@@ -42,7 +48,7 @@ scheduler_d = torch.optim.lr_scheduler.LambdaLR(optimizer=optim_d, lr_lambda=lam
 
 Epochs = 20000
 losses_d = []
-task_name = 'horizontal_position'
+task_name = args.reward
 
 encoder.load_state_dict(torch.load(f'./Results/encoder/encoder_{task_name}.pth'))
 
