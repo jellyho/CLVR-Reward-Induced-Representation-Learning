@@ -70,11 +70,11 @@ Therefore, using this model structure, it could be seen that the representation 
 
 I implemented SAC(Soft Acotr Critic) to compare the performance of image-scratch baseline and pre-trained encoder, and also oracle.
 
-[sac.py]()
+[sac.py](https://github.com/jellyho/CLVR_Impl_RIRL/blob/1ee4b380739a913e6b2b7eb7612015ceab1c7dad/sac.py#L215)
 
 I first trained oracle version to see my implementation is correct.
 
-Trianing code is [train_agent.py]()
+Trianing code is [train_agent.py](https://github.com/jellyho/CLVR_Impl_RIRL/blob/1ee4b380739a913e6b2b7eb7612015ceab1c7dad/train_agent.py#L1)
 
 ```
 python train_agent.py -t SpritesState-v0 -r . -m oracle
@@ -91,19 +91,21 @@ So for agent, it is efficient to stay at center to get high reward consistently.
 
 The result of trained agent is shown below.
 
-Testing code is [test_agent.py]()
+Testing code is [test_agent.py](https://github.com/jellyho/CLVR_Impl_RIRL/blob/1ee4b380739a913e6b2b7eb7612015ceab1c7dad/test_agent.py#L1)
 
 ```
-python test_agent.py -t SpritesState-v0 -r . -m oracle
+python test_agent.py -m oracle -t SpritesState-v0 -d ./Results/agents -e 5000
 ```
 
 <img src="./oracle.gif" alt="image" width="300" height="auto">
 
 ## 4. Train SAC with image-scratch baseline and pre-trained encoder.
 
-Encoder for image-scratch version is definded in [model.py]()
+Encoder for image-scratch version(CNN) is defined in [model.py](https://github.com/jellyho/CLVR_Impl_RIRL/blob/1ee4b380739a913e6b2b7eb7612015ceab1c7dad/models.py#L136)
 
-I trained three versions (oracle, cnn, encoder) in three environments(number of distracotr 0, 1, 2)
+SAC using CNN and Encoder version is defined in [sac.py(CNN)](https://github.com/jellyho/CLVR_Impl_RIRL/blob/1ee4b380739a913e6b2b7eb7612015ceab1c7dad/sac.py#L340) [sac.py(Encoder)](https://github.com/jellyho/CLVR_Impl_RIRL/blob/1ee4b380739a913e6b2b7eb7612015ceab1c7dad/sac.py#L353)
+
+I trained three versions (oracle, cnn, encoder) in three environments(number of distractor 0, 1, 2)
 
 ```
 python train_agent.py -m encoder -t Sprites-v0 -d ./Results/agents
