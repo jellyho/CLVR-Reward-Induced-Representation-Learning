@@ -11,8 +11,9 @@ from sac import *
 
 parser = argparse.ArgumentParser(description='Reward')
 parser.add_argument('-t', '--task', help='Specify the task')
-parser.add_argument('-r', '--root', help='Specify the reward')
 parser.add_argument('-m', '--model', help='Specify the model[oracle, cnn, encoder]')
+parser.add_argument('-d', '--dir', help='Specify the save directory')
+parser.add_argument('-e', '--epoch', help='Specify the model[oracle, cnn, encoder]')
 args = parser.parse_args()
 
 #### Image-based follower envs. ####
@@ -61,19 +62,12 @@ input_dim = env.observation_space.shape[0]
 action_dim = 2
 
 if args.model == 'cnn':
-    input_dim = (1, 64, 64)
-    encoder = SimpleCNN(64, 64)
-    agent = SAC(input_dim, action_dim, encoder=encoder, freeze_encoder=False)
+    agent = SAC_CNN(state_dim=(1, 64, 64), action_dim=action_dim)
 elif args.model == 'encoder':
-    input_dim = (1, 64, 64)
-    encoder = Encoder(64)
-    encoder.load_state_dict(torch.load(f'./Results/encoder/encoder_six.pth'))
-    agent = SAC(input_dim, action_dim, latent_dim=64, encoder=encoder, freeze_encoder=True)
+    agent = SAC_Encoder(state_dim=(1, 64, 64), action_dim=action_dim)
 elif args.model == 'oracle':
-    encoder = False
-    agent = SAC(input_dim, action_dim, encoder=encoder)
-    # agent.load_weights(f'Results/agents/oracle_73000')
-    agent.load_weights(f'{args.root}/SAC_{args.task}_{args.model}_73000')
+    agent = SAC(input_dim, action_dim)
+    agent.load_weights(f'{args.root}/{args.task}_{args.model}_{args.epoch}')
 
 
 while True:

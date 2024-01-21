@@ -28,11 +28,11 @@ class ReplayBuffer: #FIFO
     def add(self, state, action, reward, next_state, done):
         self.idx = (self.idx + 1) % self.max_len
 
-        self.states[self.idx] = torch.FloatTensor(state)
-        self.next_states[self.idx] = torch.FloatTensor(next_state)
-        self.actions[self.idx] = torch.FloatTensor(action)
-        self.rewards[self.idx] = torch.FloatTensor([reward])
-        self.dones[self.idx] = torch.FloatTensor([float(done)])
+        self.states[self.idx] = torch.FloatTensor(np.array(state))
+        self.next_states[self.idx] = torch.FloatTensor(np.array(next_state))
+        self.actions[self.idx] = torch.FloatTensor(np.array(action))
+        self.rewards[self.idx] = torch.FloatTensor(np.array([reward]))
+        self.dones[self.idx] = torch.FloatTensor(np.array([float(done)]))
         self.size = min(self.size + 1, self.max_len)
 
     def sample(self, batch_size):
@@ -257,7 +257,7 @@ class SAC:
                 print(action)
 
             next_state, reward, done, _ = env.step(action.detach().numpy())
-            next_state = torch.FloatTensor(next_state)
+            next_state = torch.FloatTensor(np.array(next_state))
             self.buffer.add(state, action, reward, next_state.unsqueeze(0), done)
             state = next_state
             rewards += reward
@@ -317,7 +317,7 @@ class SAC:
                     print(f"Episode {e + 1}, Total Reward: {np.mean(total_rewards[-50:])}, QLoss-{np.mean(q_losses[-50:])}, ALoss-{np.mean(actor_losses[-50:])}")
                 if (e + 1) % 5000 == 0:
                     self.save_weights(f'{save_dir}/{env_name}_{model_name}_{e + 1}')
-                    np.save(f'{save_dir}/SAC_log_{env_name}_{model_name}.npy', np.array(total_rewards))
+                    np.save(f'{save_dir}/{env_name}_{model_name}_Log.npy', np.array(total_rewards))
         return total_rewards
 
     def update_target(self):
@@ -339,26 +339,26 @@ class SAC:
 
 class SAC_CNN(SAC):
     def init_networks(self):
-        self.q1 = QNetwork_CNN(64, self.state_dim, self.action_dim)
-        self.q2 = QNetwork_CNN(64, self.state_dim, self.action_dim)
+        self.q1 = QNetwork_CNN(64, 64, self.action_dim)
+        self.q2 = QNetwork_CNN(64, 64, self.action_dim)
 
-        self.q1_target = QNetwork_CNN(64, self.state_dim, self.action_dim)
-        self.q2_target = QNetwork_CNN(64, self.state_dim, self.action_dim)
+        self.q1_target = QNetwork_CNN(64, 64, self.action_dim)
+        self.q2_target = QNetwork_CNN(64, 64, self.action_dim)
         self.q1_target.load_state_dict(self.q1.state_dict())
         self.q2_target.load_state_dict(self.q2.state_dict())
-        self.actor = Actor_CNN(64, self.state_dim, self.action_dim)
+        self.actor = Actor_CNN(64, 64, self.action_dim)
         self.optim_q = torch.optim.Adam(list(self.q1.parameters()) + list(self.q2.parameters()), lr=0.001)
         self.optim_actor = torch.optim.Adam(self.actor.parameters(), lr=3e-4)
 
 class SAC_Encoder(SAC):
     def init_networks(self):
-        self.q1 = QNetwork_Encoder(64, self.state_dim, self.action_dim, f'./Results/encoder/encoder_six.pth')
-        self.q2 = QNetwork_Encoder(64, self.state_dim, self.action_dim, f'./Results/encoder/encoder_six.pth')
+        self.q1 = QNetwork_Encoder(64, 64, self.action_dim, f'./Results/encoder/encoder_six.pth')
+        self.q2 = QNetwork_Encoder(64, 64, self.action_dim, f'./Results/encoder/encoder_six.pth')
 
-        self.q1_target = QNetwork_Encoder(64, self.state_dim, self.action_dim, f'./Results/encoder/encoder_six.pth')
-        self.q2_target = QNetwork_Encoder(64, self.state_dim, self.action_dim, f'./Results/encoder/encoder_six.pth')
+        self.q1_target = QNetwork_Encoder(64, 64, self.action_dim, f'./Results/encoder/encoder_six.pth')
+        self.q2_target = QNetwork_Encoder(64, 64, self.action_dim, f'./Results/encoder/encoder_six.pth')
         self.q1_target.load_state_dict(self.q1.state_dict())
         self.q2_target.load_state_dict(self.q2.state_dict())
-        self.actor = Actor_Encoder(64, self.state_dim, self.action_dim, './Results/encoder/encoder_six.pth')
+        self.actor = Actor_Encoder(64, 64, self.action_dim, './Results/encoder/encoder_six.pth')
         self.optim_q = torch.optim.Adam(list(self.q1.parameters()) + list(self.q2.parameters()), lr=0.001)
         self.optim_actor = torch.optim.Adam(self.actor.parameters(), lr=3e-4)
