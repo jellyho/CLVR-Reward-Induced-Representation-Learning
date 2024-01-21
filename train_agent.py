@@ -9,11 +9,12 @@ from general_utils import *
 from gym.envs.registration import register
 import cv2
 import argparse
+from sac import *
 
 parser = argparse.ArgumentParser(description='Reward')
 parser.add_argument('-t', '--task', help='Specify the task')
-parser.add_argument('-r', '--reward', help='Specify the reward')
 parser.add_argument('-m', '--model', help='Specify the model[oracle, cnn, encoder]')
+parser.add_argument('-d', '--dir', help='Specify the save directory')
 args = parser.parse_args()
 
 #### Image-based follower envs. ####
@@ -63,18 +64,11 @@ input_dim = env.observation_space.shape[0]
 action_dim = 2
 
 if args.model == 'cnn':
-    input_dim = (1, 64, 64)
-    encoder = SimpleCNN(64, 64)
-    agent = SAC(input_dim, action_dim, encoder=encoder, freeze_encoder=False, start_learning=1000, max_global_step=50000)
+    agent = SAC_CNN(state_dim=(1, 64, 64), action_dim=action_dim)
 elif args.model == 'encoder':
-    input_dim = (1, 64, 64)
-    encoder = Encoder(64)
-    encoder.load_state_dict(torch.load(f'./Results/encoder/encoder_six.pth'))
-    input_dim = 64
-    agent = SAC(input_dim, action_dim, encoder=encoder, freeze_encoder=True)
+    agent = SAC_Encoder(state_dim=(1, 64, 64), action_dim=action_dim)
 elif args.model == 'oracle':
-    encoder = None
-    agent = SAC(input_dim, action_dim, latent_dim=4, encoder=encoder)
+    agent = SAC(input_dim, action_dim)
 
-total_rewards = agent.train(env, render=False, batch_size=256, name=args.task)
+total_rewards = agent.train(env, render=False, batch_size=256, model_name=args.model, env_name=args.task, save_dir=args.dir)
 cv2.destroyAllWindows()

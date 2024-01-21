@@ -7,6 +7,7 @@ from gym.envs.registration import register
 import cv2
 import time
 import argparse
+from sac import *
 
 parser = argparse.ArgumentParser(description='Reward')
 parser.add_argument('-t', '--task', help='Specify the task')
@@ -71,7 +72,8 @@ elif args.model == 'encoder':
 elif args.model == 'oracle':
     encoder = False
     agent = SAC(input_dim, action_dim, encoder=encoder)
-    agent.load_weights(f'{args.root}/{args.model}_73000')
+    # agent.load_weights(f'Results/agents/oracle_73000')
+    agent.load_weights(f'{args.root}/SAC_{args.task}_{args.model}_73000')
 
 
 while True:
