@@ -70,7 +70,7 @@ Therefore, using this model structure, it could be seen that the representation 
 
 I implemented SAC(Soft Acotr Critic) to compare the performance of image-scratch baseline and pre-trained encoder, and also oracle.
 
-[model.py]()
+[sac.py]()
 
 I first trained oracle version to see my implementation is correct.
 
@@ -106,15 +106,17 @@ Encoder for image-scratch version is definded in [model.py]()
 I trained three versions (oracle, cnn, encoder) in three environments(number of distracotr 0, 1, 2)
 
 ```
-python train_agent.py -t SpritesState-v0 -r . -m oracle
-python train_agent.py -t SpritesState-v1 -r . -m oracle
-python train_agent.py -t SpritesState-v2 -r . -m oracle
-python train_agent.py -t Sprites-v0 -r . -m cnn
-python train_agent.py -t Sprites-v1 -r . -m cnn
-python train_agent.py -t Sprites-v2 -r . -m cnn
-python train_agent.py -t Sprites-v0 -r . -m encoder
-python train_agent.py -t Sprites-v1 -r . -m encoder
-python train_agent.py -t Sprites-v2 -r . -m encoder
+python train_agent.py -m encoder -t Sprites-v0 -d ./Results/agents
+python train_agent.py -m encoder -t Sprites-v1 -d ./Results/agents
+python train_agent.py -m encoder -t Sprites-v2 -d ./Results/agents
+
+python train_agent.py -m cnn -t Sprites-v0 -d ./Results/agents
+python train_agent.py -m cnn -t Sprites-v1 -d ./Results/agents
+python train_agent.py -m cnn -t Sprites-v2 -d ./Results/agents
+
+python train_agent.py -m oracle -t SpritesState-v0 -d ./Results/agents
+python train_agent.py -m oracle -t SpritesState-v1 -d ./Results/agents
+python train_agent.py -m oracle -t SpritesState-v2 -d ./Results/agents
 ```
 
 ## 5. Results & Discussion

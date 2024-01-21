@@ -251,7 +251,7 @@ class SAC:
                 action = torch.FloatTensor(np.random.uniform(-1, 1, 2))
             else:
                 with torch.no_grad():
-                    state = torch.FloatTensor(state)
+                    state = torch.FloatTensor(np.array(state))
                     action, _ = self.actor.get_action(state.unsqueeze(0))
             if render:
                 print(action)
