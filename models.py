@@ -4,6 +4,9 @@ import torch.nn as nn
 import datetime
 import random
 import cv2
+from torch.distributions import Normal
+from torch.distributions import multivariate_normal
+from plotter import *
 
 class Encoder(nn.Module):
     def __init__(self, input_size):
@@ -99,7 +102,7 @@ class FutureRewardsEstimator(nn.Module):
 
     def forward(self, x):
         x = self.hse(x)
-        x = x[self.N:]
+        x = x[-self.T:]
         if self.Heads == 1:
             x = self.head(x)
             x = x.squeeze(1)
@@ -129,113 +132,80 @@ class Decoder(nn.Module):
             else:
                 x = self.relu(x)
         return x
-
-class ActorCritic(nn.Module):
-    def __init__(self, input_dim, action_dim):
-        super(ActorCritic, self).__init__()
-        self.action_dim = action_dim
-        self.actor = nn.Sequential(
-            nn.Linear(input_dim, 256),
-            nn.Tanh(),
-            nn.Linear(256, action_dim),
-            nn.Softmax(dim=-1)
-        )
-
-        # Critic 신경망
-        self.critic = nn.Sequential(
-            nn.Linear(input_dim, 256),
-            nn.Tanh(),
-            nn.Linear(256, 128),
-            nn.Tanh(),
-            nn.Linear(128, 1)
-        )
-
-    def forward(self, state):
-        action_prob = self.actor(state)
-        state_value = self.critic(state)
-
-        return action_prob, state_value
-    
-class A2CAgent:
-    def __init__(self, input_dim, action_dim, lr=0.0007, gamma=0.99, ac_ratio=1):
-        self.input_dim = input_dim
-        self.action_dim = action_dim
-        self.model = ActorCritic(input_dim, action_dim)
-        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=lr)
-        self.gamma = gamma
-        self.ac_ratio = ac_ratio
-
-    def update(self, state, action, reward, next_state, done):
-        state = torch.FloatTensor(state)
-        next_state = torch.FloatTensor(next_state)
-        action = torch.LongTensor(action)
-        reward = torch.FloatTensor(reward)
-        done = torch.LongTensor(done)
-
-        action_prob, value = self.model(state)
-
-        with torch.no_grad():
-            _, next_value = self.model(next_state)
-            target = reward + (1 - done) * self.gamma * next_value
-        critic_loss = (target - value).pow(2).mean()
-
-        eye = torch.eye(self.action_dim)
-        one_hot = eye[action]
-        adv = (target - value).detach()
-        actor_loss = -(torch.log((one_hot * action_prob).sum(1)) * adv).mean()
-
-        # Total loss
-        total_loss = self.ac_ratio * actor_loss + critic_loss
-
-        # Backpropagation and optimization
-        self.optimizer.zero_grad()
-        total_loss.backward()
-        self.optimizer.step()
-        
-    def train(self, env, num_episodes=1000, action_dict=None):
-        total_rewards = []
-        for e in range(num_episodes):
-            state = env.reset()
-            done = False
-            total_reward = 0
-            while not done:
-                img = env.render()
-                cv2.imshow('train', img)
-                cv2.waitKey(1)
-                action_prob, _ = self.model(torch.FloatTensor(state))
-                action = np.random.choice(len(action_prob), p=action_prob.detach().numpy())
-                if action_dict:
-                    next_state, reward, done, _ = env.step(action_dict[action])
-                else:
-                    next_state, reward, done, _ = env.step(action)
-
-                self.update(state, [action], [reward], next_state, [done])
-                state = next_state
-                total_reward += reward
-            total_rewards.append(total_reward)
-            print(f"Episode {e}, Total Reward: {np.mean(total_rewards[-50:])}")
-        torch.save(self.model.state_dict(), f'Results/agents/A2C_{datetime.datetime.now()}.pth')
-        return total_rewards
     
 class ReplayBuffer: #FIFO
-    def __init__(self, max_len):
+    def __init__(self, max_len, state_dim, action_dim):
         self.max_len = max_len
         self.idx = 0
         self.size = 0
-        self.buffer = [] * self.max_len
+
+        if isinstance(state_dim, tuple):
+            self.states = torch.zeros((max_len,) + state_dim, dtype=torch.float32)
+            self.next_states = torch.zeros((max_len,) + state_dim, dtype=torch.float32)
+        elif isinstance(state_dim, int):
+            self.states = torch.zeros((max_len, state_dim), dtype=torch.float32)
+            self.next_states = torch.zeros((max_len, state_dim), dtype=torch.float32)
+        self.rewards = torch.zeros(max_len, dtype=torch.float32)
+        self.actions = torch.zeros((max_len, action_dim), dtype=torch.float32)
+        self.dones = torch.zeros(max_len, dtype=torch.float32)
 
     def add(self, state, action, reward, next_state, done):
         self.idx = (self.idx + 1) % self.max_len
-        self.buffer[self.idx] = (state, action, reward, next_state, done)
+
+        self.states[self.idx] = torch.FloatTensor(state)
+        self.next_states[self.idx] = torch.FloatTensor(next_state)
+        self.actions[self.idx] = torch.FloatTensor(action)
+        self.rewards[self.idx] = torch.FloatTensor([reward])
+        self.dones[self.idx] = torch.FloatTensor([float(done)])
         self.size = min(self.size + 1, self.max_len)
 
-    def smaple(self, batch_size):
+    def sample(self, batch_size):
         idxs = np.random.randint(0, self.size, size=batch_size)
-        # need to change to torch tensor lists.
-        return self.buffer[idxs]
+        states = self.states[idxs]
+        next_states = self.next_states[idxs]
+        rewards = self.rewards[idxs]
+        actions = self.actions[idxs]
+        dones = self.dones[idxs]
+        return states, actions, rewards, next_states, dones
+
+class SimpleCNN(nn.Module):
+    def __init__(self, input_dim, output_dim):
+        super(SimpleCNN, self).__init__()
+        self.cnn1 = nn.Conv2d(1, 4, kernel_size=3, stride=2)
+        self.cnn2 = nn.Conv2d(4, 16, kernel_size=3, stride=2)
+        self.cnn3 = nn.Conv2d(16, 32, kernel_size=3, stride=2)
+        self.relu = nn.ReLU()
+
+        self.dummy_input = torch.randn(1, 1, input_dim, input_dim)
+        
+        self.linear1 = nn.Linear(self._get_flattend_size(), 64)
+        self.linear2 = nn.Linear(64, output_dim)
+
+    def _get_flattend_size(self):
+        x = self.cnn1(self.dummy_input)
+        x = self.cnn2(x)
+        x = self.cnn3(x)
+        x = nn.Flatten()(x)
+        return x.shape[1]
+
+    def forward(self,x):
+        x = self.cnn1(x)
+        x = self.relu(x)
+        x = self.cnn2(x)
+        x = self.relu(x)
+        x = self.cnn3(x)
+        x = self.relu(x)
+        x = nn.Flatten()(x)
+        x = self.linear1(x)
+        x = self.relu(x)
+        x = self.linear2(x)
+        x = self.relu(x)
+
+        return x
 
 class MLP(nn.Module):
     def __init__(self, input_dim, output_dim, hidden_dim, hidden_count):
+        super(MLP, self).__init__()
         self.input = nn.Linear(input_dim, hidden_dim)
         self.hiddens = nn.ModuleList()
         for _ in range(hidden_count - 1):
@@ -243,64 +213,209 @@ class MLP(nn.Module):
         self.output = nn.Linear(hidden_dim, output_dim)
         self.relu = nn.ReLU()
 
-    def foward(self, x):
+    def forward(self, x):
         x = self.input(x)
         x = self.relu(x)
-        for i in range(len(self.hiddens - 1)):
+        for i in range(len(self.hiddens) - 1):
             x = self.hiddens[i](x)
             x = self.relu(x)
         x = self.output(x)
         return x
 
+class Actor(nn.Module):
+    def __init__(self, input_dim, action_dim):
+        super(Actor, self).__init__()
+        self.input = nn.Linear(input_dim, 256)
+        self.hidden = nn.Linear(256, 256)
+        self.mu = nn.Linear(256, action_dim)
+        self.sigma = nn.Linear(256, action_dim)
+        self.relu = nn.ReLU()
+
+    def forward(self, x):
+        x = self.input(x)
+        x = self.relu(x)
+        x = self.hidden(x)
+        x = self.relu(x)
+        sigma = nn.Tanh()(self.sigma(x))
+        mu = self.mu(x)
+        return mu, sigma
 
 class SAC:
-    def __init__(self, state_dim, action_dim, gamma=0.99):
+    def __init__(self, state_dim, action_dim, latent_dim=64, action_scale=1, encoder=None, freeze_encoder=False, gamma=0.99, alpha=0.2, tau=0.005, log_std_max=2, log_std_min=-5, max_global_step=100000, start_learning=1000):
         self.state_dim = state_dim
         self.action_dim = action_dim
+        if isinstance(state_dim, tuple):
+            self.latent_dim = latent_dim
+        else:
+            self.latent_dim = self.state_dim
         self.gamma = gamma
-
-        self.critic = MLP(state_dim, 1, 32, 2)
-        self.target_critic = MLP(state_dim, 1, 32, 2)
+        self.alpha = alpha
+        self.tau = tau
+        self.log_std_max=log_std_max
+        self.log_std_min=log_std_min
+        self.max_global_step = max_global_step
+        self.start_learning = start_learning
         
-        self.q1 = MLP(state_dim, action_dim, 32, 2)
-        self.q2 = MLP(state_dim, action_dim, 32, 2)
+        self.encoder = encoder
+        self.freeze_encoder = False
 
-        self.policy = MLP(state_dim, action_dim * 2, 32, 3)
+        self.q1 = MLP(self.latent_dim + action_dim, 1, 256, 1)
+        self.q2 = MLP(self.latent_dim + action_dim, 1, 256, 1)
 
-        self.buffer = ReplayBuffer(1000)
+        self.q1_target = MLP(self.latent_dim + action_dim, 1, 256, 1)
+        self.q2_target = MLP(self.latent_dim + action_dim, 1, 256, 1)
+        self.q1_target.load_state_dict(self.q1.state_dict())
+        self.q2_target.load_state_dict(self.q2.state_dict())
+
+        self.policy = Actor(self.latent_dim, action_dim)
+
+        self.buffer = ReplayBuffer(100000, self.state_dim, action_dim)
+
+        self.optim_q1 = torch.optim.Adam(self.q1.parameters(), lr=0.001)
+        self.optim_q2 = torch.optim.Adam(self.q2.parameters(), lr=0.001)
+        self.optim_policy = torch.optim.Adam(self.policy.parameters(), lr=3e-4)
+
+        if encoder:
+            self.optim_encoder = torch.optim.Adam(self.encoder.parameters(), lr=0.0003)
 
         #optimizers needed
 
+    def encode_state(self, state):
+        if self.encoder:
+            if self.freeze_encoder:
+                with torch.no_grad():
+                    state = self.encoder(state)
+            else:
+                state = self.encoder(state)
+            return state
+        return torch.FloatTensor(state)
+
     def get_action(self, state):
-        # reparameterization trick
-        policy = self.policy(state)
-        mu = policy[:self.action_dim]
-        sigma = policy[self.action_dim:] # log-variance
+        state = self.encode_state(state)
+        mu, sigma = self.policy(state)
+        sigma = torch.clamp(sigma, min=self.log_std_min, max=self.log_std_max)
+        std = torch.exp(sigma) # variance
 
-        sigma = torch.exp(sigma) # variance
-        epsilon = torch.randn_like(sigma)
+        normal = Normal(mu, std)
 
-        return mu + epsilon * sigma
-
-    def rollout(self, env, number=1):
-        for _ in range(number):
-            state = env.reset()
-            done = False
-
-            while not done:
-                action = self.get_action(state)
-                next_state, reward, done, _ = env.step(action)
-                self.buffer.add(state, action, reward, next_state, done)
-                state = next_state
-    
-    def update(self):
-        data = self.buffer.sample(16)
-
-        for state, action, next_State, reward, done in data:
-            # critic update
-            critic = self.critic(state)
-            target_critic = self.target_critic(state)
-
-            q1 = self.q1(state)
+        sample = normal.rsample()
+        action = nn.Tanh()(sample)
         
+        log_prob = normal.log_prob(sample)
+        log_prob -= torch.log(2 * (1 - action.pow(2)) + 1e-6)
+        log_prob = torch.sum(log_prob, dim=1)
+        
+        return action, log_prob
+
+    def rollout(self, env, random=False, render=False, fps=1000):
+        rewards = 0
+        state = env.reset()
+        done = False
+        while not done:
+            if render:
+                img = env.render()
+                cv2.imshow('train', img)
+                cv2.waitKey(int(1000 / fps))
+            if random:
+                action = torch.FloatTensor(np.random.uniform(-1, 1, 2))
+            else:
+                with torch.no_grad():
+                    state = torch.FloatTensor(state)
+                    action, _ = self.get_action(state.unsqueeze(0))
+            if render:
+                print(action)
+
+            next_state, reward, done, _ = env.step(action.detach().numpy())
+            next_state = torch.FloatTensor(next_state)
+            self.buffer.add(state, action, reward, next_state.unsqueeze(0), done)
+            state = next_state
+            rewards += reward
+        return rewards
+    
+    def get_q_value(self, model, state, action):
+        return model(torch.cat([self.encode_state(state), action], dim=1))
+    
+    def update(self, batch_size):
+        state, action, reward, next_state, done = self.buffer.sample(batch_size)
+        ## critic update ##################################
+        with torch.no_grad():
+            next_action, next_log_prob = self.get_action(next_state)
+            next_q1 = self.get_q_value(self.q1_target, next_state, next_action)
+            next_q2 = self.get_q_value(self.q2_target, next_state, next_action)
+            minq = torch.min(next_q1, next_q2).squeeze(1)
+            q_target = reward + self.gamma * (1 - done) * (minq - self.alpha * next_log_prob).detach()
+
+        q1 = self.get_q_value(self.q1, state, action).squeeze(1)
+        q2 = self.get_q_value(self.q2, state, action).squeeze(1)
+
+        q1_loss = torch.nn.functional.mse_loss(q1, q_target)
+        q2_loss = torch.nn.functional.mse_loss(q2, q_target)
+
+        self.optim_q1.zero_grad()   
+        q1_loss.backward()
+        self.optim_q1.step()
+
+        self.optim_q2.zero_grad()
+        q2_loss.backward()
+        self.optim_q2.step()
+        ## end of the critic update ###################################
+
+        ## actor update ###############################################
+        sampled_action, log_prob = self.get_action(state)
+        sampled_q1 = self.get_q_value(self.q1, state, action)
+        sampled_q2 = self.get_q_value(self.q2, state, action)
+        sampled_minq = torch.min(sampled_q1, sampled_q2).squeeze(1)
+        policy_loss = (self.alpha * log_prob - sampled_minq).mean()
+
+        self.optim_policy.zero_grad()
+        policy_loss.backward()
+        self.optim_policy.step()
+        ## end of the actor update
+        
+        return q1_loss.item(), q2_loss.item(), policy_loss.item()
+    
+    def update_target(self):
+        ## soft update for critic
+        for source_params, target_params in zip(self.q1.parameters(), self.q1_target.parameters()):
+            target_params.data.copy_((1 - self.tau) * target_params.data + self.tau * source_params.data)
+        for source_params, target_params in zip(self.q2.parameters(), self.q2_target.parameters()):
+            target_params.data.copy_((1 - self.tau) * target_params.data + self.tau * source_params.data)
+
+    def save_weights(self, dir):
+        torch.save(self.policy.state_dict(), dir+'_policy.pth')
+        torch.save(self.q1.state_dict(), dir+'_q1.pth')
+        torch.save(self.q2.state_dict(), dir+'_q2.pth')
+
+    def load_weights(self, dir):
+        self.policy.load_state_dict(torch.load(dir+'_policy.pth'))
+        self.q1.load_state_dict(torch.load(dir+'_q1.pth'))
+        self.q2.load_state_dict(torch.load(dir+'_q2.pth'))
+
+    def train(self, env, render=False, batch_size=256, name='oracle'):
+        total_rewards = []
+        q1 = []
+        q2 = []
+        policy = []
+
+        for e in range(self.max_global_step):
+            if e < self.start_learning:
+                # rollout for fill buffer
+                self.rollout(env, random=True)
+            else:
+                total_rewards.append(self.rollout(env, render=render))
+                q1_loss, q2_loss, policy_loss = self.update(batch_size)
+                q1.append(q1_loss)
+                q2.append(q2_loss)
+                policy.append(policy_loss)
+
+                self.update_target()
+
+                if (e + 1) % 100 == 0:
+                    print(f"Episode {e + 1}, Total Reward: {np.mean(total_rewards[-50:])}, Q1-{np.mean(q1[-10:])}, Q2-{np.mean(q2[-10:])}, Po-{np.mean(policy[-10:])}")
+                if (e + 1) % 5000 == 0:
+                    self.save_weights(f'Results/agents/SAC_{name}_{e + 1}')
+                    np.save(f'{name}.npy', np.array(total_rewards))
+        return total_rewards
+        
+
 

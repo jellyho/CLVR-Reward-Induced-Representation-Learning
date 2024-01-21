@@ -67,3 +67,56 @@ As you see, the decoded images contain information about their rewards. For exam
 Therefore, using this model structure, it could be seen that the representation learning containing information about rewards progressed well.
 
 ## 3. Implement RL Algorithm
+
+I implemented SAC(Soft Acotr Critic) to compare the performance of image-scratch baseline and pre-trained encoder, and also oracle.
+
+[model.py]()
+
+I first trained oracle version to see my implementation is correct.
+
+Trianing code is [train_agent.py]()
+
+```
+python train_agent.py -t SpritesState-v0 -r . -m oracle
+```
+
+The result is shown below.
+![](./Training_Results_oracle.png)
+
+It seems like working well. 
+
+The reason why agent not following well and keep staying at center more is the environment's time horizon is too short and target is keep moving around randomly. 
+
+So for agent, it is efficient to stay at center to get high reward consistently.
+
+The result of trained agent is shown below.
+
+Testing code is [test_agent.py]()
+
+```
+python test_agent.py -t SpritesState-v0 -r . -m oracle
+```
+
+<img src="./oracle.gif" alt="image" width="300" height="auto">
+
+## 4. Train SAC with image-scratch baseline and pre-trained encoder.
+
+Encoder for image-scratch version is definded in [model.py]()
+
+I trained three versions (oracle, cnn, encoder) in three environments(number of distracotr 0, 1, 2)
+
+```
+python train_agent.py -t SpritesState-v0 -r . -m oracle
+python train_agent.py -t SpritesState-v1 -r . -m oracle
+python train_agent.py -t SpritesState-v2 -r . -m oracle
+python train_agent.py -t Sprites-v0 -r . -m cnn
+python train_agent.py -t Sprites-v1 -r . -m cnn
+python train_agent.py -t Sprites-v2 -r . -m cnn
+python train_agent.py -t Sprites-v0 -r . -m encoder
+python train_agent.py -t Sprites-v1 -r . -m encoder
+python train_agent.py -t Sprites-v2 -r . -m encoder
+```
+
+## 5. Results & Discussion
+
+The results is shown below.

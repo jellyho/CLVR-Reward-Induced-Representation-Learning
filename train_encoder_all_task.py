@@ -22,8 +22,6 @@ N = 5
 T = 30 - N
 lr = 0.001
 
-
-
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print(f'current device is {device}')
 # dataset
@@ -52,7 +50,7 @@ scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer=optim, lr_lambda=lambda 
 
 ####### end of the model definition ######
 
-Epochs = 3000
+Epochs = 5000
 losses = []
 
 for e in range(Epochs):

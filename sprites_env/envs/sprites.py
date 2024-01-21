@@ -114,7 +114,7 @@ class SpritesEnv(gym.Env):
             state = min_value + state * span
         pos_state, self._state = self.forward(state)
         im = self._render(np.expand_dims(pos_state, 0), self.shapes).squeeze(0)
-        return im / 255
+        return [im / 255]
 
     def seed(self, seed=None):
         np.random.seed(seed)
@@ -132,7 +132,7 @@ class SpritesEnv(gym.Env):
         done = (self.ep_len >= self.max_ep_len)
         info = {}
 
-        return im / 255, reward, done, info
+        return [im / 255], reward, done, info
 
     def _reward(self, state):
         agent_pos = state[0, :2]

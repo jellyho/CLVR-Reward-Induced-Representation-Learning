@@ -1,7 +1,7 @@
 import torch
 from models import *
 from sprites_datagen.moving_sprites import MovingSpriteDataset
-from general_utils import AttrDict
+from general_utils import AttrDict, parse_dataset
 from sprites_datagen.rewards import *
 from plotter import *
 
@@ -35,21 +35,17 @@ decoder2  = Decoder(64)
 
 task_name = ['horizontal_position', 'vertical_position']
 
-encoder1.load_state_dict(torch.load(f'./Results/encoder/encoder_{task_name[0]}.pth'))
-decoder1.load_state_dict(torch.load(f'./Results/decoder/decoder_{task_name[0]}.pth'))
+encoder1.load_state_dict(torch.load(f'./Results/encoder/encoderv2_{task_name[0]}.pth'))
+decoder1.load_state_dict(torch.load(f'./Results/decoder/decoderv2_{task_name[0]}.pth'))
 
-encoder2.load_state_dict(torch.load(f'./Results/encoder/encoder_{task_name[1]}.pth'))
-decoder2.load_state_dict(torch.load(f'./Results/decoder/decoder_{task_name[1]}.pth'))
+encoder2.load_state_dict(torch.load(f'./Results/encoder/encoderv2_{task_name[1]}.pth'))
+decoder2.load_state_dict(torch.load(f'./Results/decoder/decoderv2_{task_name[1]}.pth'))
 
 while True:
     with torch.no_grad():
         data = ds[0]
 
-        input_images = data['images'][:, 0, :, :]
-        input_images = input_images[:, np.newaxis, :, :]
-        input_images = torch.from_numpy(input_images)
-
-        # learn for each tasks
+        tasks, input_images = parse_dataset(data, 0, 29)
         
         z1 = encoder1(input_images)
         decoded1 = decoder1(z1.reshape(-1, 64, 1, 1))
@@ -57,7 +53,7 @@ while True:
         z2 = encoder2(input_images)
         decoded2 = decoder2(z2.reshape(-1, 64, 1, 1))
 
-        select_idx = [1, 3, 6, 10, 15, 21]
+        select_idx = [1, 3, 6, 10, 15, 21, 28]
         plot = torch.cat([input_images[select_idx, :, :, :], decoded1[select_idx, :, :, :], decoded2[select_idx, :, :, :]], dim=0)
         plot = torch.squeeze(plot, dim=1)
-        plot_imgs(plot, 6, 3, select_idx)
+        plot_imgs(plot, 7, 3, select_idx)

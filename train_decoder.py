@@ -50,7 +50,7 @@ Epochs = 20000
 losses_d = []
 task_name = args.reward
 
-encoder.load_state_dict(torch.load(f'./Results/encoder/encoder_{task_name}.pth'))
+encoder.load_state_dict(torch.load(f'./Results/encoder/encoderv2_{task_name}.pth'))
 
 for e in range(Epochs):
     loss_d_epoch = 0
@@ -78,5 +78,5 @@ for e in range(Epochs):
     
     print(f"epoch:{e} - loss_d:{np.mean(losses_d[-10:]):.5f} - lr:{optim_d.param_groups[0]['lr']:.8f}        ")
 
-torch.save(decoder.state_dict(), f'Results/decoder/decoder_{task_name}.pth')
-plot_and_save_loss_per_epoch_1(losses_d, f'decoder_{task_name} pretraining', 'decoder')
+torch.save(decoder.state_dict(), f'Results/decoder/decoderv2_{task_name}.pth')
+plot_and_save_loss_per_epoch_1(losses_d, f'decoderv2_{task_name} pretraining', 'decoder')

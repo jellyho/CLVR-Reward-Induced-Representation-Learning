@@ -52,16 +52,20 @@ def make_image_seq_strip(imgs, n_logged_samples=5, sep_val=0.0):
 
 
 def parse_dataset(data, N, T):
-    tasks = np.array([data['rewards']['vertical_position'][N:],
-                data['rewards']['horizontal_position'][N:],
-                data['rewards']['agent_x'][N:],
-                data['rewards']['agent_y'][N:],
-                data['rewards']['target_x'][N:],
-                data['rewards']['target_y'][N:]])
+    tasks = np.array([data['rewards']['vertical_position'][N:N+T],
+                data['rewards']['horizontal_position'][N:N+T],
+                data['rewards']['agent_x'][N:N+T],
+                data['rewards']['agent_y'][N:N+T],
+                data['rewards']['target_x'][N:N+T],
+                data['rewards']['target_y'][N:N+T]])
     tasks = torch.from_numpy(tasks)
         
     input_images = data['images'][:, 0, :, :]
-    input_images = input_images[:, np.newaxis, :, :]
+    input_images = input_images[:-1, np.newaxis, :, :]
     input_images = torch.from_numpy(input_images)
     
     return tasks, input_images
+
+def task_to_idx(task_name):
+    task_dict = {'vertical_position':0, 'horizontal_position':1, 'agent_x':2, 'agent_y':3, 'target_x':4, 'target_y':5}
+    return task_dict[task_name]

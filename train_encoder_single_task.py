@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from models import *
 from sprites_datagen.moving_sprites import MovingSpriteDataset
-from general_utils import AttrDict
+from general_utils import AttrDict, parse_dataset, task_to_idx
 from sprites_datagen.rewards import *
 from plotter import *
 import argparse
@@ -32,9 +32,10 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print(f'current device is {device}')
 # dataset
 ds = MovingSpriteDataset(spec=spec)
+
 dataset_size = 1000
 print('preparing dataset')
-buffer = [ds[0] for _ in range(dataset_size)]
+buffer = [parse_dataset(ds[0], N, T) for _ in range(dataset_size)]
 print('dataset prepared.')
 batch_size = 16
 
@@ -68,24 +69,21 @@ for e in range(Epochs):
     batch = random.sample(buffer, batch_size)
     for data in batch:
         # preprocessing
-        optim.zero_grad()
-        task = torch.from_numpy(data['rewards'][task_name][N:N+T])
-        input_images = data['images'][:, 0, :, :]
-        input_images = input_images[:, np.newaxis, :, :]
-        input_images = torch.from_numpy(input_images)
+        tasks, input_images = data
+        task = tasks[task_to_idx(task_name)]
 
+        optim.zero_grad()
         # learn for each tasks
         estimated_reward = fre(input_images)
         loss = nn.MSELoss(reduction='sum')(estimated_reward, task)
         loss.backward()
+        loss_epoch += loss.item()
         optim.step()
     scheduler.step()
-
-    loss_epoch += loss.item()
-    losses.append(loss_epoch)
+    losses.append(loss_epoch / batch_size)
     
     print(f"epoch:{e} - loss:{np.mean(losses[-30:]):.5f} - lr:{optim.param_groups[0]['lr']:.8f}      ")
 
-torch.save(encoder.state_dict(), f'Results/encoder/encoder_{task_name}.pth')
-torch.save(fre.state_dict(), f'Results/encoder/fre_{task_name}.pth')
-plot_and_save_loss_per_epoch_1(losses, f'encoder_{task_name} pretraining', 'encoder')
+torch.save(encoder.state_dict(), f'Results/encoder/encoderv2_{task_name}.pth')
+torch.save(fre.state_dict(), f'Results/encoder/frev2_{task_name}.pth')
+plot_and_save_loss_per_epoch_1(losses, f'encoderv2_{task_name} pretraining', 'encoder')
