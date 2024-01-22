@@ -126,7 +126,20 @@ python train_agent.py -m oracle -t SpritesState-v2 -d ./Results/agents
 The results is shown below.
 
 ![](./Results/agents/Sprites-v0.png)
+![](/Results/Sprites-v0.gif)
+
+As you see, oracle and encoder is trained well(slightly good for oracle). But, cnn is not quite well trained.
 
 ![](./Results/agents/Sprites-v1.png)
+![](/Results/Sprites-v1.gif)
+
+Also orale and encoder trained well. But we can't see any progress of cnn.
 
 ![](./Results/agents/Sprites-v2.png)
+![](/Results/Sprites-v2.gif)
+
+Encoder is slightly less performance than oracle.
+
+So, we can see that pre-trained encoder helps RL algorithms to learn efficient, high performance(Almost same as oracle)
+
+But, cnn version we didn't seem good

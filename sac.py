@@ -339,9 +339,9 @@ class SAC:
         torch.save(self.q2.state_dict(), dir+'_q2.pth')
 
     def load_weights(self, dir):
-        self.actor.load_state_dict(torch.load(dir+'_actor.pth'))
-        self.q1.load_state_dict(torch.load(dir+'_q1.pth'))
-        self.q2.load_state_dict(torch.load(dir+'_q2.pth'))
+        self.actor.load_state_dict(torch.load(dir+'_actor.pth', map_location=device))
+        self.q1.load_state_dict(torch.load(dir+'_q1.pth', map_location=device))
+        self.q2.load_state_dict(torch.load(dir+'_q2.pth', map_location=device))
 
 class SAC_CNN(SAC):
     def init_networks(self):

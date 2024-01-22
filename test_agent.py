@@ -67,7 +67,7 @@ elif args.model == 'encoder':
     agent = SAC_Encoder(state_dim=(1, 64, 64), action_dim=action_dim)
 elif args.model == 'oracle':
     agent = SAC(input_dim, action_dim)
-    agent.load_weights(f'{args.dir}/{args.task}_{args.model}_{args.epoch}')
+agent.load_weights(f'{args.dir}/{args.task}_{args.model}_{args.epoch}')
 
 
 while True:
