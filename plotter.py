@@ -51,6 +51,6 @@ def plot_npys(root_dir, envs, names, title, x_title, y_title, ma=1):
 
 if __name__ == '__main__':
     plot_npys('./Results/agents', ['SpritesState-v0', 'Sprites-v0', 'Sprites-v0'], ['oracle', 'cnn', 'encoder'], 'Sprites-v0', 'step', 'reward', 2000)
-    plot_npys('./Results/agents', ['SpritesState-v1', 'Sprites-v1'], ['oracle', 'cnn'], 'Sprites-v1', 'step', 'reward', 2000)
+    plot_npys('./Results/agents', ['SpritesState-v1', 'Sprites-v1', 'Sprites-v1'], ['oracle', 'cnn', 'encoder'], 'Sprites-v1', 'step', 'reward', 2000)
     plot_npys('./Results/agents', ['SpritesState-v2', 'Sprites-v2'], ['oracle', 'cnn'], 'Sprites-v2', 'step', 'reward', 2000)
 

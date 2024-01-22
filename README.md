@@ -7,7 +7,7 @@ Starter Code Repo : <https://github.com/kpertsch/clvr_impl_starter>
 ![](/Results/model.png)
 
 ## 1. Implement the reward-indcued representation learning model
-I contructed the model in [models.py]()
+I contructed the model in [models.py](https://github.com/jellyho/CLVR_Impl_RIRL/blob/7906edb3949ef03c944951e9077b74523887ec1a/models.py#L91)
 
 ANd I trained the model using the provided dataset with 6 given rewards.
 
@@ -124,3 +124,9 @@ python train_agent.py -m oracle -t SpritesState-v2 -d ./Results/agents
 ## 5. Results & Discussion
 
 The results is shown below.
+
+![](./Results/agents/Sprites-v0.png)
+
+![](./Results/agents/Sprites-v1.png)
+
+![](./Results/agents/Sprites-v2.png)
