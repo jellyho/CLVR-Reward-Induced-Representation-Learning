@@ -28,11 +28,11 @@ def plot_imgs(images, num_cols, num_rows, idxs):
             axes[i, j].axis('off')  # 축 숨김
     plt.show()
 
-def plot_npys(root_dir, names, title, x_title, y_title, ma=1):
+def plot_npys(root_dir, envs, names, title, x_title, y_title, ma=1):
     datas = {}
     lens = []
     for i, n in enumerate(names):
-        datas[n] = np.load(f'{root_dir}/{n}.npy')
+        datas[n] = np.load(f'{root_dir}/{envs[i]}_{n}_Log.npy')
         lens.append(len(datas[n]))
     minimum_len = np.min(lens)
 
@@ -50,5 +50,5 @@ def plot_npys(root_dir, names, title, x_title, y_title, ma=1):
     plt.savefig(f'{root_dir}/{title}.png')
 
 if __name__ == '__main__':
-    plot_npys('.', ['oracle'], 'Training Results', 'step', 'reward', 2000)
+    plot_npys('./Results/agents', ['Sprites-v1'], ['cnn'], 'Sprites-v1', 'step', 'reward', 2000)
 
