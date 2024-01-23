@@ -142,4 +142,6 @@ Encoder is slightly less performance than oracle.
 
 So, we can see that pre-trained encoder helps RL algorithms to learn efficient, high performance(Almost same as oracle)
 
-But, cnn version we didn't seem good
+But, cnn version didn't seem to be learning.
+
+So that, Reward Induced Representation Learing helps RL Agent to train efficiently because they have some information about ground truth state induced by meta tasks.
