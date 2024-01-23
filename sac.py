@@ -123,10 +123,11 @@ class Actor_CNN(nn.Module):
         return action, log_prob
     
 class Actor_Encoder(nn.Module):
-    def __init__(self, input_dim, latent_dim, action_dim, encoder_weight_dir):
+    def __init__(self, input_dim, latent_dim, action_dim, encoder_weight_dir=None):
         super(Actor_Encoder, self).__init__()
         self.encoder = Encoder(input_dim)
-        self.encoder.load_state_dict(torch.load(encoder_weight_dir))
+        if encoder_weight_dir is not None:
+            self.encoder.load_state_dict(torch.load(encoder_weight_dir))
         self.input = nn.Linear(latent_dim, 256)
         self.hidden = nn.Linear(256, 256)
         self.mu = nn.Linear(256, action_dim)
@@ -196,10 +197,11 @@ class QNetwork_CNN(nn.Module):
         return x
     
 class QNetwork_Encoder(nn.Module):
-    def __init__(self, state_dim, latent_dim, action_dim, encoder_weight_dir):
+    def __init__(self, state_dim, latent_dim, action_dim, encoder_weight_dir=None):
         super().__init__()
         self.encoder = Encoder(state_dim)
-        self.encoder.load_state_dict(torch.load(encoder_weight_dir))
+        if encoder_weight_dir is not None:
+            self.encoder.load_state_dict(torch.load(encoder_weight_dir))
         self.fc1 = nn.Linear(latent_dim + action_dim, 256)
         self.fc2 = nn.Linear(256, 256)
         self.fc3 = nn.Linear(256, 1)
@@ -356,7 +358,20 @@ class SAC_CNN(SAC):
         self.optim_q = torch.optim.Adam(list(self.q1.parameters()) + list(self.q2.parameters()), lr=0.001)
         self.optim_actor = torch.optim.Adam(self.actor.parameters(), lr=3e-4)
 
-class SAC_Encoder(SAC):
+class SAC_ImageScratch(SAC):
+    def init_networks(self):
+        self.q1 = QNetwork_Encoder(64, 64, self.action_dim).to(device)
+        self.q2 = QNetwork_Encoder(64, 64, self.action_dim).to(device)
+
+        self.q1_target = QNetwork_Encoder(64, 64, self.action_dim).to(device)
+        self.q2_target = QNetwork_Encoder(64, 64, self.action_dim).to(device)
+        self.q1_target.load_state_dict(self.q1.state_dict())
+        self.q2_target.load_state_dict(self.q2.state_dict())
+        self.actor = Actor_Encoder(64, 64, self.action_dim).to(device)
+        self.optim_q = torch.optim.Adam(list(self.q1.parameters()) + list(self.q2.parameters()), lr=0.001)
+        self.optim_actor = torch.optim.Adam(self.actor.parameters(), lr=3e-4)
+
+class SAC_RewardPrediction(SAC):
     def init_networks(self):
         self.q1 = QNetwork_Encoder(64, 64, self.action_dim, f'./Results/encoder/encoder_six.pth').to(device)
         self.q2 = QNetwork_Encoder(64, 64, self.action_dim, f'./Results/encoder/encoder_six.pth').to(device)
