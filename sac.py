@@ -225,7 +225,7 @@ class QNetwork_Encoder(nn.Module):
         return x
     
 class SAC:
-    def __init__(self, state_dim, action_dim, action_scale=1, gamma=0.99, alpha=0.2, tau=0.005, max_global_step=50000, start_learning=1000):
+    def __init__(self, state_dim, action_dim, action_scale=1, gamma=0.99, alpha=0.2, tau=0.005, max_global_step=35000, start_learning=1000):
         self.state_dim = state_dim
         self.action_dim = action_dim
         self.gamma = gamma
