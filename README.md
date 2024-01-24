@@ -57,8 +57,8 @@ python train_decoder.py -r vertical_position
 
 #### Results
 The First row is **ground truth** of current state, Second row is decoded image by encoder-decoder only trained using **vertical reward**, and the Thrid row is decoded image by encoder-decoder only trained using **horizontal_reward**.
-![](/Results/encdec1.png)
-![](/Results/encdec2.png)
+![](/images/encdec1.png)
+![](/images/encdec2.png)
 
 Circle Shape is the agent. And encoder-decoders are trained on the rewards based on target's position.
 
@@ -81,7 +81,7 @@ python train_agent.py -t SpritesState-v0 -r . -m oracle
 ```
 
 The result is shown below.
-![](./Training_Results_oracle.png)
+![](./images/Training_Results_oracle.png)
 
 It seems like working well. 
 
@@ -97,7 +97,7 @@ Testing code is [test_agent.py](https://github.com/jellyho/CLVR_Impl_RIRL/blob/1
 python test_agent.py -m oracle -t SpritesState-v0 -d ./Results/agents -e 5000
 ```
 
-<img src="./oracle.gif" alt="image" width="300" height="auto">
+<img src="./images/oracle.gif" alt="image" width="300" height="auto">
 
 ## 4. Train SAC with image-scratch baseline and pre-trained encoder.
 
@@ -126,17 +126,17 @@ python train_agent.py -m oracle -t SpritesState-v2 -d ./Results/agents
 The results is shown below.
 
 ![](./Results/agents/Sprites-v0.png)
-![](/Results/Sprites-v0.gif)
+![](/images/Sprites-v0.gif)
 
 As you see, oracle and encoder is trained well(slightly good for oracle). But, cnn is not quite well trained.
 
 ![](./Results/agents/Sprites-v1.png)
-![](/Results/Sprites-v1.gif)
+![](/images/Sprites-v1.gif)
 
 Also orale and encoder trained well. But we can't see any progress of cnn.
 
 ![](./Results/agents/Sprites-v2.png)
-![](/Results/Sprites-v2.gif)
+![](/images/Sprites-v2.gif)
 
 Encoder is slightly less performance than oracle.
 

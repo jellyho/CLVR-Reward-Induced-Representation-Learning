@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize
 import numpy as np
+import cv2
 
 def plot_and_save_loss_per_epoch_1(list, title, folder):
     plt.figure(figsize=(8, 6))
@@ -48,6 +49,23 @@ def plot_npys(root_dir, envs, names, title, x_title, y_title, ma=1):
     plt.ylabel(y_title)
     plt.legend(loc='lower right')
     plt.savefig(f'{root_dir}/{title}.png')
+
+def create_gif(images, output_path, duration=500):
+    # Ensure all images have the same size
+    height, width, _ = images[0].shape
+
+    # Create VideoWriter object
+    video = cv2.VideoWriter(output_path, cv2.VideoWriter_fourcc(*'mp4v'), 1/duration, (width, height))
+
+    # Write images to GIF
+    for img in images:
+        video.write(img)
+
+    cv2.destroyAllWindows()
+    video.release()
+
+def create_demo_gif():
+    
 
 if __name__ == '__main__':
     plot_npys('./Results/agents', ['SpritesState-v0', 'Sprites-v0', 'Sprites-v0', 'Sprites-v0'], ['oracle', 'cnn', 'image_scratch', 'reward_predictor'], 'Sprites-v0', 'step', 'reward', 2000)
