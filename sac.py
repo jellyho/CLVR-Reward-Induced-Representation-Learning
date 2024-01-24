@@ -204,6 +204,7 @@ class QNetwork_Encoder(nn.Module):
     def __init__(self, state_dim, latent_dim, action_dim, encoder_weight_dir=None):
         super().__init__()
         self.encoder = Encoder(state_dim)
+        self.freeze = False if encoder_weight_dir is None else True
         if encoder_weight_dir is not None:
             self.encoder.load_state_dict(torch.load(encoder_weight_dir))
         self.fc1 = nn.Linear(latent_dim + action_dim, 256)
