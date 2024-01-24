@@ -126,6 +126,7 @@ class Actor_Encoder(nn.Module):
     def __init__(self, input_dim, latent_dim, action_dim, encoder_weight_dir=None):
         super(Actor_Encoder, self).__init__()
         self.encoder = Encoder(input_dim)
+        self.freeze = False if encoder_weight_dir is None else True
         if encoder_weight_dir is not None:
             self.encoder.load_state_dict(torch.load(encoder_weight_dir))
         self.input = nn.Linear(latent_dim, 256)
@@ -137,7 +138,10 @@ class Actor_Encoder(nn.Module):
         self.log_std_min = -5
 
     def forward(self, x):
-        with torch.no_grad():
+        if self.freeze:
+            with torch.no_grad():
+                x = self.encoder(x)
+        else:
             x = self.encoder(x)
         x = self.input(x)
         x = self.relu(x)
@@ -208,7 +212,10 @@ class QNetwork_Encoder(nn.Module):
         self.relu = nn.ReLU()
 
     def forward(self, x, a):
-        with torch.no_grad():
+        if self.freeze:
+            with torch.no_grad():
+                x = self.encoder(x)
+        else:
             x = self.encoder(x)
         x = torch.cat([x, a], 1)
         x = self.relu(self.fc1(x))
