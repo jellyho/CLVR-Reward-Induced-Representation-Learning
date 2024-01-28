@@ -250,13 +250,19 @@ class SAC:
         self.optim_q = torch.optim.Adam(list(self.q1.parameters()) + list(self.q2.parameters()), lr=0.001)
         self.optim_actor = torch.optim.Adam(self.actor.parameters(), lr=3e-4)
 
-    def rollout(self, env, random=False, render=False, fps=1000):
+    def rollout(self, env, random=False, render=False, fps=1000, stack=False):
         rewards = 0
         state = env.reset()
         done = False
+        if stack:
+            image_stack = np.ones((40, 1, 64, 64))
+            stack_idx = 0
         while not done:
             if render:
                 img = env.render()
+                if stack:
+                    image_stack[stack_idx, :, :, :] = np.array(img)
+                    stack_idx += 1
                 cv2.imshow('train', img)
                 cv2.waitKey(int(1000 / fps))
             if random:
@@ -273,7 +279,10 @@ class SAC:
             self.buffer.add(state, action.cpu(), reward, next_state.unsqueeze(0), done)
             state = next_state
             rewards += reward
-        return rewards
+        if stack:
+            return rewards, image_stack
+        else:
+            return rewards
 
     def train(self, env, render=False, batch_size=256, model_name='oracle', env_name='', save_dir=''):
         total_rewards = []

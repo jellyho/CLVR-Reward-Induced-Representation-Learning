@@ -57,6 +57,8 @@ python train_decoder.py -r vertical_position
 
 #### Results
 The First row is **ground truth** of current state, Second row is decoded image by encoder-decoder only trained using **vertical reward**, and the Thrid row is decoded image by encoder-decoder only trained using **horizontal_reward**.
+Acutally there are bug in given reward function that vertical reward and horizontal reward flipped. So vertical model learned horizontal reward and horizontal model learned vertical.
+
 ![](/images/encdec1.png)
 ![](/images/encdec2.png)
 
@@ -83,7 +85,7 @@ python train_agent.py -t SpritesState-v0 -r . -m oracle
 The result is shown below.
 ![](./images/Training_Results_oracle.png)
 
-It seems like working well. 
+It seems like working well. But some fluctuation happens, maybe the hyperparameter is not perfect.
 
 The reason why agent not following well and keep staying at center more is the environment's time horizon is too short and target is keep moving around randomly. 
 
@@ -105,16 +107,21 @@ Encoder for image-scratch version(CNN) is defined in [model.py](https://github.c
 
 SAC using CNN and Encoder version is defined in [sac.py(CNN)](https://github.com/jellyho/CLVR_Impl_RIRL/blob/1ee4b380739a913e6b2b7eb7612015ceab1c7dad/sac.py#L340) [sac.py(Encoder)](https://github.com/jellyho/CLVR_Impl_RIRL/blob/1ee4b380739a913e6b2b7eb7612015ceab1c7dad/sac.py#L353)
 
-I trained three versions (oracle, cnn, encoder) in three environments(number of distractor 0, 1, 2)
+I trained four versions (oracle, cnn, encoder) in three environments(number of distractor 0, 1, 2)
 
 ```
-python train_agent.py -m encoder -t Sprites-v0 -d ./Results/agents
-python train_agent.py -m encoder -t Sprites-v1 -d ./Results/agents
-python train_agent.py -m encoder -t Sprites-v2 -d ./Results/agents
+python train_agent.py -m reward_predictor -t Sprites-v0 -d ./Results/agents
+python train_agent.py -m reward_predictor -t Sprites-v1 -d ./Results/agents
+python train_agent.py -m reward_predictor -t Sprites-v2 -d ./Results/agents
 
 python train_agent.py -m cnn -t Sprites-v0 -d ./Results/agents
 python train_agent.py -m cnn -t Sprites-v1 -d ./Results/agents
 python train_agent.py -m cnn -t Sprites-v2 -d ./Results/agents
+
+python train_agent.py -m image_scratch -t Sprites-v0 -d ./Results/agents
+python train_agent.py -m image_scratch -t Sprites-v1 -d ./Results/agents
+python train_agent.py -m image_scratch -t Sprites-v2 -d ./Results/agents
+
 
 python train_agent.py -m oracle -t SpritesState-v0 -d ./Results/agents
 python train_agent.py -m oracle -t SpritesState-v1 -d ./Results/agents
@@ -126,22 +133,22 @@ python train_agent.py -m oracle -t SpritesState-v2 -d ./Results/agents
 The results is shown below.
 
 ![](./Results/agents/Sprites-v0.png)
-![](/images/Sprites-v0.gif)
+![](/Results/Sprites-v0.gif)
 
-As you see, oracle and encoder is trained well(slightly good for oracle). But, cnn is not quite well trained.
+As you see, oracle and reward_predictior is trained well(reward_predictior is slightly better than oracle). But, cnn and image scratch is not well trained.
 
 ![](./Results/agents/Sprites-v1.png)
-![](/images/Sprites-v1.gif)
+![](/Results/Sprites-v1.gif)
 
-Also orale and encoder trained well. But we can't see any progress of cnn.
+Also orale and reward_predictor trained well. But we can't see any progress of cnn and image_scratch.
 
 ![](./Results/agents/Sprites-v2.png)
-![](/images/Sprites-v2.gif)
+![](/Results/Sprites-v2.gif)
 
-Encoder is slightly less performance than oracle.
+Reward_predictor is slightly less performance than oracle.
 
 So, we can see that pre-trained encoder helps RL algorithms to learn efficient, high performance(Almost same as oracle)
 
-But, cnn version didn't seem to be learning.
+But, cnn, image_scratch version didn't seem to be learning.
 
 So that, Reward Induced Representation Learing helps RL Agent to train efficiently because they have some information about ground truth state induced by meta tasks.
