@@ -202,4 +202,4 @@ So, we can see that pre-trained encoder helps RL algorithms to learn efficient, 
 
 But, cnn and image_scratch didn't seem to be learning.
 
-Reward Induced Representation Learing helps RL Agent to train efficiently even though there are some distractors. Because encoder's representation have enough information of ground truth state induced by meta tasks.
+**R**eward **I**nduced **R**epresentation **L**earning helps RL Agent to train efficiently even though there are some distractors. Because encoder's representation have enough information of ground truth state induced by meta tasks.
