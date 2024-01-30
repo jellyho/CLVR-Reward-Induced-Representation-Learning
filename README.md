@@ -114,6 +114,8 @@ I tried 4 baselines
 - image_scratch
 - reward_predictor(ours)
 
+oracle can access the ground truth posiiton, so it is upper bound.
+
 Encoder for image-scratch version(CNN) is defined in [model.py](https://github.com/jellyho/CLVR_Impl_RIRL/blob/1ee4b380739a913e6b2b7eb7612015ceab1c7dad/models.py#L136)
 
 SAC using cnn and reward_predictor version is defined in [sac.py(oracle)](https://github.com/jellyho/CLVR_Impl_RIRL/blob/d48c97c136e4d668ea3dafc19f02137aa15a5364/sac.py#L227), [sac.py(cnn)](https://github.com/jellyho/CLVR_Impl_RIRL/blob/d48c97c136e4d668ea3dafc19f02137aa15a5364/sac.py#L365), [sac.py(image_scratch)](https://github.com/jellyho/CLVR_Impl_RIRL/blob/d48c97c136e4d668ea3dafc19f02137aa15a5364/sac.py#L378), [sac.py(reward_predictor)](https://github.com/jellyho/CLVR_Impl_RIRL/blob/d48c97c136e4d668ea3dafc19f02137aa15a5364/sac.py#L391)
