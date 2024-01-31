@@ -50,21 +50,6 @@ def plot_npys(root_dir, envs, names, title, x_title, y_title, ma=1):
     plt.legend(loc='lower right')
     plt.savefig(f'{root_dir}/{title}.png')
 
-# def create_gif(images, output_path, duration=500):
-#     # Ensure all images have the same size
-#     _, height, width = images[0].shape
-
-#     # Create VideoWriter object
-#     video = cv2.VideoWriter(output_path, cv2.VideoWriter_fourcc(*'GIF'), 1/duration, (width, height))
-
-#     # Write images to GIF
-#     for img in images:
-#         video.write(img)
-
-#     cv2.destroyAllWindows()
-#     video.release()
-#     print('created gif')
-
 def create_gif(images, output_path, duration=5):
     imageio.mimsave(output_path, images, duration=duration, loop=0)
 

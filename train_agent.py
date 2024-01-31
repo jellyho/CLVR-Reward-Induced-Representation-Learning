@@ -67,6 +67,8 @@ if args.model == 'cnn':
     agent = SAC_CNN(state_dim=(1, 64, 64), action_dim=action_dim)
 elif args.model == 'reward_prediction':
     agent = SAC_RewardPrediction(state_dim=(1, 64, 64), action_dim=action_dim)
+elif args.model == 'reward_prediction_finetune':
+    agent = SAC_RewardPredictionFinetune(state_dim=(1, 64, 64), action_dim=action_dim)
 elif args.model == 'image_scratch':
     agent = SAC_ImageScratch(state_dim=(1, 64, 64), action_dim=action_dim)
 elif args.model == 'oracle':
